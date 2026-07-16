@@ -154,3 +154,27 @@ fn parse_struct_handles_win7_winxp_and_undersized() {
     // Too short for either struct → skipped.
     assert!(parse_struct("z".into(), "g".into(), 0, &[0u8; 8]).is_none());
 }
+
+#[test]
+fn known_folder_guids_resolve_to_paths() {
+    // FOLDERID_System → System32 (so a system binary here is NOT flagged relocated).
+    assert_eq!(
+        resolve_known_folder(r"{1AC14E77-02E7-4E5D-B744-2EB1AE5198B7}\calc.exe"),
+        r"C:\Windows\System32\calc.exe"
+    );
+    // FOLDERID_Windows.
+    assert_eq!(
+        resolve_known_folder(r"{F38BF404-1D43-42F2-9305-67DE0B28FC23}\explorer.exe"),
+        r"C:\Windows\explorer.exe"
+    );
+    // Unrecognized GUID → kept verbatim.
+    let unknown = r"{00000000-0000-0000-0000-000000000000}\x.exe";
+    assert_eq!(resolve_known_folder(unknown), unknown);
+    // A plain path (no GUID prefix) passes through unchanged.
+    assert_eq!(
+        resolve_known_folder(r"C:\Users\a\x.exe"),
+        r"C:\Users\a\x.exe"
+    );
+    // A malformed `{`-prefixed token without a closing `}\` is left alone.
+    assert_eq!(resolve_known_folder("{not-a-guid"), "{not-a-guid");
+}

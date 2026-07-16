@@ -109,7 +109,7 @@ pub fn parse_bytes(bytes: &[u8]) -> Result<Vec<UserAssistEntry>, UserAssistError
         for count in guid_key.subkey("Count")?.into_iter() {
             let key_lw = count.last_written_raw();
             for value in count.values()? {
-                let name = rot13(&value.name());
+                let name = resolve_known_folder(&rot13(&value.name()));
                 if name.starts_with("UEME_CTLSESSION") || name.starts_with("UEME_CTLCUACount") {
                     continue;
                 }
@@ -173,6 +173,39 @@ fn rot13(s: &str) -> String {
             other => other,
         })
         .collect()
+}
+
+/// Resolve a leading Windows `KNOWNFOLDERID` GUID prefix (`{GUID}\rest`) to its folder path, so
+/// UserAssist entries read as real paths. UserAssist stores executable entries as
+/// `{FOLDERID}\program.exe` — without resolution a `System32` binary looks path-less and would be
+/// mis-flagged as relocated. The GUID→folder mapping is Microsoft's fixed `KNOWNFOLDERID` set.
+/// An unrecognized GUID (or a non-GUID name) is returned unchanged.
+fn resolve_known_folder(name: &str) -> String {
+    let Some(rest) = name.strip_prefix('{') else {
+        return name.to_string();
+    };
+    let Some((guid, tail)) = rest.split_once("}\\") else {
+        return name.to_string();
+    };
+    let folder = match guid.to_ascii_uppercase().as_str() {
+        "1AC14E77-02E7-4E5D-B744-2EB1AE5198B7" => r"C:\Windows\System32",
+        "D65231B0-B2F1-4857-A4CE-A8E7C6EA7D27" => r"C:\Windows\SysWOW64",
+        "F38BF404-1D43-42F2-9305-67DE0B28FC23" => r"C:\Windows",
+        "6D809377-6AF0-444B-8957-A3773F02200E" | "905E63B6-C1BF-494E-B29C-65B732D3D21A" => {
+            r"C:\Program Files"
+        }
+        "7C5A40EF-A0FB-4BFC-874A-C0F2E0B9FA8E" => r"C:\Program Files (x86)",
+        "B4BFCC3A-DB2C-424C-B029-7FE99A87C641" => r"%USERPROFILE%\Desktop",
+        "374DE290-123F-4565-9164-39C4925E467B" => r"%USERPROFILE%\Downloads",
+        "FDD39AD0-238F-46AF-ADB4-6C85480369C7" => r"%USERPROFILE%\Documents",
+        "F1B32785-6FBA-4FCF-9D55-7B8E7F157091" => r"%LOCALAPPDATA%",
+        "3EB685DB-65F9-4CF6-A03A-E3EF65729F3D" => r"%APPDATA%",
+        "A77F5D77-2E2B-44C3-A6A2-ABA601054A51" => {
+            r"%APPDATA%\Microsoft\Windows\Start Menu\Programs"
+        }
+        _ => return name.to_string(), // unrecognized GUID — keep verbatim
+    };
+    format!("{folder}\\{tail}")
 }
 
 /// Read a little-endian `u32` at `offset`, or `None` if the slice is too short.
