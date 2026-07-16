@@ -52,6 +52,17 @@ fn suspicious_path_is_flagged() {
 }
 
 #[test]
+fn lnk_shortcut_in_a_staging_dir_is_not_flagged_suspicious() {
+    // A UserAssist `.lnk` entry records a shortcut *click*; its path is the shortcut's home
+    // (Public Desktop, Start Menu) — not where any binary ran. Feeding a shortcut to the
+    // executable-staging heuristic is a false positive (Chrome.lnk on the Public Desktop).
+    let a = audit(&[entry(r"C:\Users\Public\Desktop\Google Chrome.lnk", 2)]);
+    assert!(!a
+        .iter()
+        .any(|x| matches!(x, UserAssistAnomaly::SuspiciousPath { .. })));
+}
+
+#[test]
 fn benign_and_non_path_entries_are_quiet() {
     let a = audit(&[
         entry(r"C:\Program Files\app\app.exe", 5),
@@ -123,6 +134,12 @@ fn analyze_bytes_on_the_real_cfreds_hive() {
         .anomalies
         .iter()
         .any(|a| matches!(a, UserAssistAnomaly::SystemBinaryRelocated { .. })));
+    // A `.lnk` shortcut's location is never execution-from-staging evidence — the two
+    // Public-Desktop shortcuts (Google Chrome.lnk, Eraser.lnk) must not fire SuspiciousPath.
+    assert!(!report.anomalies.iter().any(|a| matches!(
+        a,
+        UserAssistAnomaly::SuspiciousPath { path, .. } if path.to_ascii_lowercase().ends_with(".lnk")
+    )));
 }
 
 #[test]
