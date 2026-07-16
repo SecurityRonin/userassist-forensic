@@ -1,0 +1,21 @@
+[package]
+name = "userassist-forensic"
+version = "0.1.0"
+edition.workspace = true
+rust-version.workspace = true
+description = "Windows UserAssist forensic analyzer — reports per-user GUI program launches (path, run count, last-execution time) with graded findings (system-binary masquerading, execution from a staging directory), plus the userassist4n6 CLI."
+license.workspace = true
+authors.workspace = true
+keywords = ["forensics", "userassist", "windows", "dfir", "execution"]
+categories = ["command-line-utilities", "parser-implementations"]
+repository.workspace = true
+readme.workspace = true
+
+[dependencies]
+userassist-core = { workspace = true }
+winreg-core = { workspace = true }
+forensicnomicon = { workspace = true }
+jiff = "0.2"
+
+[lints]
+workspace = true

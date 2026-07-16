@@ -1,0 +1,19 @@
+[package]
+name = "userassist-core"
+version = "0.1.0"
+edition.workspace = true
+rust-version.workspace = true
+description = "Pure-Rust read-only Windows UserAssist reader — decodes the per-user GUI execution-evidence entries (ROT13-encoded program path, launch run count, focus count/time, last-execution FILETIME) from the UserAssist key of an NTUSER.DAT hive."
+license.workspace = true
+authors.workspace = true
+keywords = ["forensics", "userassist", "windows", "dfir", "execution"]
+categories = ["parser-implementations"]
+repository.workspace = true
+readme.workspace = true
+exclude = ["tests/data/", "fuzz/"]
+
+[dependencies]
+winreg-core = { workspace = true }
+
+[lints]
+workspace = true
