@@ -3,6 +3,7 @@
 | File | Description | Size |
 |---|---|---|
 | `ntuser.hve` | A real `NTUSER.DAT` registry hive containing a populated `UserAssist` key | ~1 MiB |
+| `not_userassist.hve` | A real REGF hive with **no** `UserAssist` key (an `Amcache.hve`) — exercises the `NotUserAssist` error path | ~1 MiB |
 
 ## Source
 
@@ -16,6 +17,11 @@ Standards and Technology.
 
 CFReDS datasets are produced by NIST and released into the **public domain**, so the hive is
 committed directly (it is ≤ 1 MiB).
+
+`not_userassist.hve` is a **DFIRArtifactMuseum** `Amcache.hve` (`Win10/APTSimulatorVM/`,
+<https://github.com/AndrewRathbun/DFIRArtifactMuseum>, **MIT-licensed**) — a valid REGF hive that
+happens to contain no `UserAssist` key, used to cover the `NotUserAssist` error path (MD5
+`cc22b30f8410b607d107583fa6de8e53`).
 
 ## Integrity
 
