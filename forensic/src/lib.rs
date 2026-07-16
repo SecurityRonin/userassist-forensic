@@ -87,7 +87,9 @@ pub fn audit(entries: &[UserAssistEntry]) -> Vec<UserAssistAnomaly> {
                 last_executed_filetime: e.last_executed_filetime,
             });
         }
-        if forensicnomicon::heuristics::paths::is_suspicious_exec_path(path) {
+        if is_executable_image(path)
+            && forensicnomicon::heuristics::paths::is_suspicious_exec_path(path)
+        {
             out.push(UserAssistAnomaly::SuspiciousPath {
                 name,
                 path: path.to_string(),
@@ -102,6 +104,25 @@ pub fn audit(entries: &[UserAssistEntry]) -> Vec<UserAssistAnomaly> {
 /// The base name (last `\`/`/`-component) of a path.
 fn base_name(path: &str) -> String {
     path.rsplit(['\\', '/']).next().unwrap_or(path).to_string()
+}
+
+/// Executable-image / script extensions. The staging-directory heuristic applies only to a
+/// program image — a UserAssist `.lnk` shortcut, `AppUserModelId`, or Control-Panel token is
+/// not "a binary staged in a malware directory". (Duplicates the intent of the private
+/// `EXEC_EXTENSIONS` in `forensicnomicon::heuristics::srum`; a shared `is_executable_image`
+/// belongs in `forensicnomicon::heuristics::paths` — tracked for centralization.)
+const EXECUTABLE_IMAGE_EXTENSIONS: &[&str] = &[
+    ".exe", ".scr", ".com", ".pif", ".bat", ".cmd", ".ps1", ".vbs", ".vbe", ".js", ".jse", ".wsf",
+    ".hta", ".cpl", ".dll", ".msi",
+];
+
+/// Returns `true` if `path` names an executable image (by extension), so the staging-directory
+/// heuristic should apply. Shortcuts (`.lnk`) and non-file shell tokens return `false`.
+fn is_executable_image(path: &str) -> bool {
+    let lower = path.to_ascii_lowercase();
+    EXECUTABLE_IMAGE_EXTENSIONS
+        .iter()
+        .any(|ext| lower.ends_with(ext))
 }
 
 impl UserAssistAnomaly {
